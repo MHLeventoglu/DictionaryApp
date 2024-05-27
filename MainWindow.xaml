@@ -1,12 +1,12 @@
-﻿<Window x:Class="MarkdownWriter.MainWindow"
+﻿<Window x:Class="PersonalDictionary.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Dictionary App"
         AllowsTransparency="False"
-        WindowStyle="None"
+        WindowStyle="None"        
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
         Background="#161B1F"
         BorderBrush="#000000"  BorderThickness="0"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown"
         MinWidth="500"  
         MinHeight="450"
         Width="500"  
@@ -25,6 +25,17 @@
                 <ScrollViewer x:Name="PART_ContentHost"/>
             </Border>
         </ControlTemplate>
+        <ControlTemplate x:Key="RoundedButtonTemplate" TargetType="Button">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}"
+                    CornerRadius="5">
+                <ContentControl HorizontalAlignment="Center" FontSize="{TemplateBinding FontSize}">
+                    <ContentPresenter/>
+                </ContentControl>
+            </Border>
+        </ControlTemplate>
         
         <Style TargetType="TextBox" x:Key="RoundedTextBoxStyle">
             <Setter Property="Foreground" Value="Black"/>
@@ -38,17 +49,17 @@
             <Setter Property="Margin" Value="20"/>
             <Setter Property="Padding" Value="15"/>
             <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Template" Value="{StaticResource RoundedButtonTemplate}"/>
         </Style>
         
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="DimGray"/>
             <Setter Property="FontSize" Value="20"/>
-            
         </Style>
     </Window.Resources>
     <Grid Background="Transparent">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -56,10 +67,9 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
-        <TextBlock Margin="0,10,10,0" Foreground="Black" Grid.ColumnSpan="2" VerticalAlignment="Center"/>
-
-        <ComboBox Tag="Select notebook" x:Name="txtFilePath" Background="Transparent" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Path" BorderThickness="0" Margin="10" Width="Auto" HorizontalAlignment="Stretch" Grid.Column="1">
+        <Button Grid.Row="0" Grid.Column="0" FontWeight="UltraBold" FontSize="10" VerticalContentAlignment="Top" Margin="20,10,0,10" Width="20" BorderThickness="0" Click="btnFolder_Click">...
+        </Button>
+        <ComboBox Grid.Row="0" Tag="Select notebook" x:Name="txtFilePath" Background="Transparent" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Path" BorderThickness="0" Margin="0,10,20,10.5" Width="Auto" HorizontalAlignment="Stretch" Grid.Column="1">
             <ComboBox.Effect>
                 <DropShadowEffect Color="Black" Direction="315" ShadowDepth="3" Opacity="0.5"/>
             </ComboBox.Effect>
@@ -71,7 +81,7 @@
             </Button.Effect>
         </Button>
 
-        <TextBox Tag="Inser the word..." Panel.ZIndex="0" Style="{StaticResource RoundedTextBoxStyle}" x:Name="txtContent" MinHeight="300" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Top">
+        <TextBox Panel.ZIndex="0" Style="{StaticResource RoundedTextBoxStyle}" x:Name="txtContent" MinHeight="300" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Top">
             <TextBox.Effect>
                 <DropShadowEffect Color="Black" Direction="315" ShadowDepth="3" Opacity="0.5"/>
             </TextBox.Effect>

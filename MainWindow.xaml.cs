@@ -1,58 +1,141 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
-using System.Net.Mime;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Win32;
 
-namespace MarkdownWriter
+namespace PersonalDictionary
 {
-    public static class FileNameReader
+    public partial class MainWindow
     {
-        public static string[] GetFileNames(string directoryPath)
-        {
-            if (Directory.Exists(directoryPath))
-            {
-                return Directory.EnumerateFiles(directoryPath)
-                    .Select(Path.GetFileName)
-                    .ToArray();
-            }
-            else
-            {
-                throw new DirectoryNotFoundException($"Directory not found: {directoryPath}");
-            }
-        }
-    }
-    
-    public partial class MainWindow : Window
-    {
-        private static string directloc = "C:\\Users\\mhlev\\Documents\\Obsidian\\ObsidianVault\\EnglishDB\\";
+        private static string directloc = "C:\\";
+        private static string programFolderName = "DictionaryApp";
+        private string configFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            programFolderName,
+            "config.json"
+        );
         string[] files = FileNameReader.GetFileNames(directloc);
-            public class Option
-             {
-                 public string Name { get; set; }
-             }
+
+        public class Option
+        {
+            public string Name { get; set; }
+        }
+
         public ObservableCollection<Option> Options { get; set; }
+
         public MainWindow()
         {
             InitializeComponent();
-            Options = new ObservableCollection<Option> { };
+            Options = new ObservableCollection<Option>();
+
+            LoadConfig();
+            
+            files = FileNameReader.GetFileNames(directloc);
             foreach (string file in files)
             {
                 Options.Add(new Option() { Name = file });
             }
-            DataContext = this;;
+
+            DataContext = this;
         }
 
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void RaisePropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs mouseButtonEventArgs)
         {
             DragMove();
         }
+
+
+        private OpenFolderDialog Select_Directory()
+        {
+            OpenFolderDialog folderDialog = new OpenFolderDialog
+            {
+                Title = "Select Folder",
+                InitialDirectory = directloc
+            };
+
+            folderDialog.ShowDialog();
+
+            return folderDialog;
+        }
+
+        private void CreateFolderIfNotExists()
+        {
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), programFolderName);
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+        }
+
+        private void btnFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var folderDialog = Select_Directory();
+            // Check if user selected a folder
+            if (!string.IsNullOrEmpty(folderDialog.FolderName))
+            {
+                directloc = folderDialog.FolderName;
+                files = FileNameReader.GetFileNames(directloc);
+
+                Options.Clear();
+                foreach (string file in files)
+                {
+                    Options.Add(new Option() { Name = file });
+                }
+
+                RaisePropertyChanged("Options");
+
+                SaveConfig();
+            }
+        }
+
+        private void SaveConfig()
+        {
+            try
+            {
+                CreateFolderIfNotExists();
+
+                var config = new { LastDirectory = directloc };
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                string jsonString = JsonSerializer.Serialize(config, options);
+
+                File.WriteAllText(configFilePath, jsonString);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred saving configuration: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void LoadConfig()
+        {
+            try
+            {
+                if (File.Exists(configFilePath))
+                {
+                    string jsonString = File.ReadAllText(configFilePath);
+                    var config = JsonSerializer.Deserialize<dynamic>(jsonString);
+                    directloc = config?.GetProperty("LastDirectory").GetString();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred loading configuration: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private void btnWrite_Click(object sender, RoutedEventArgs e)
         {
             string path = txtFilePath.Text;
-            string filePath = "C:\\Users\\mhlev\\Documents\\Obsidian\\ObsidianVault\\EnglishDB\\"+path;
-            string contentToWrite = string.Format("[{0}](https://dictionary.cambridge.org/dictionary/english/{0})- ",txtContent.Text);
+            string filePath = Path.Combine(directloc, path);
+            string contentToWrite = string.Format("[{0}](https://dictionary.cambridge.org/dictionary/english/{0})- ", txtContent.Text);
 
             if (string.IsNullOrEmpty(filePath))
             {
@@ -64,7 +147,7 @@ namespace MarkdownWriter
             {
                 using (StreamWriter sw = File.AppendText(filePath))
                 {
-                    sw.WriteLine(contentToWrite);
+                    sw.WriteLine("\t" + contentToWrite);
                 }
             }
             catch (Exception ex)
